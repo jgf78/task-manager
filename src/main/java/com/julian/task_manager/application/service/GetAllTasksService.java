@@ -2,8 +2,11 @@ package com.julian.task_manager.application.service;
 
 import java.util.List;
 
+import com.julian.task_manager.application.dto.TaskPageResponse;
 import com.julian.task_manager.application.dto.TaskResponse;
 import com.julian.task_manager.domain.model.Task;
+import com.julian.task_manager.domain.model.TaskPage;
+import com.julian.task_manager.domain.model.TaskPageRequest;
 import com.julian.task_manager.domain.port.in.GetAllTasksUseCase;
 import com.julian.task_manager.domain.port.out.TaskRepository;
 
@@ -16,12 +19,22 @@ public class GetAllTasksService implements GetAllTasksUseCase {
     }
 
     @Override
-    public List<TaskResponse> getAll() {
+    public TaskPageResponse getAll(TaskPageRequest pageRequest) {
 
-        return taskRepository.findAll()
+        TaskPage taskPage = taskRepository.findAll(pageRequest);
+
+        List<TaskResponse> tasks = taskPage.content()
                 .stream()
                 .map(this::toResponse)
                 .toList();
+
+        return new TaskPageResponse(
+                tasks,
+                taskPage.page(),
+                taskPage.size(),
+                taskPage.totalElements(),
+                taskPage.totalPages()
+        );
     }
 
     private TaskResponse toResponse(Task task) {

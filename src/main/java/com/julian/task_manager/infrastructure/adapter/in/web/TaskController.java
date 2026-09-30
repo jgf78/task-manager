@@ -1,7 +1,5 @@
 package com.julian.task_manager.infrastructure.adapter.in.web;
 
-import java.util.List;
-
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -11,11 +9,14 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.julian.task_manager.application.dto.CreateTaskRequest;
+import com.julian.task_manager.application.dto.TaskPageResponse;
 import com.julian.task_manager.application.dto.TaskResponse;
 import com.julian.task_manager.application.dto.UpdateTaskRequest;
+import com.julian.task_manager.domain.model.TaskPageRequest;
 import com.julian.task_manager.domain.port.in.CompleteTaskUseCase;
 import com.julian.task_manager.domain.port.in.CreateTaskUseCase;
 import com.julian.task_manager.domain.port.in.DeleteTaskUseCase;
@@ -24,6 +25,7 @@ import com.julian.task_manager.domain.port.in.GetTaskUseCase;
 import com.julian.task_manager.domain.port.in.UpdateTaskUseCase;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Positive;
 
 @Validated
@@ -62,9 +64,18 @@ public class TaskController {
     }
 
     @GetMapping
-    public List<TaskResponse> getAllRecords() {
+    public TaskPageResponse getAll(
+            @RequestParam(defaultValue = "0")
+            @Min(value = 0, message = "Page must be greater than or equal to 0")
+            int page,
 
-        return getAllTasksUseCase.getAll();
+            @RequestParam(defaultValue = "10")
+            @Min(value = 1, message = "Size must be greater than 0")
+            int size) {
+
+        return getAllTasksUseCase.getAll(
+                new TaskPageRequest(page, size)
+        );
     }
 
     @DeleteMapping("/{id}")

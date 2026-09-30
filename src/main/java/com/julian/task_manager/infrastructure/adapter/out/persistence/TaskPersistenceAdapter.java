@@ -3,7 +3,13 @@ package com.julian.task_manager.infrastructure.adapter.out.persistence;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+
 import com.julian.task_manager.domain.model.Task;
+import com.julian.task_manager.domain.model.TaskPage;
+import com.julian.task_manager.domain.model.TaskPageRequest;
 import com.julian.task_manager.domain.port.out.TaskRepository;
 
 public class TaskPersistenceAdapter implements TaskRepository {
@@ -32,12 +38,27 @@ public class TaskPersistenceAdapter implements TaskRepository {
     }
 
     @Override
-    public List<Task> findAll() {
+    public TaskPage findAll(TaskPageRequest pageRequest) {
 
-        return taskJpaRepository.findAll()
+        Pageable pageable = PageRequest.of(
+                pageRequest.page(),
+                pageRequest.size()
+        );
+
+        Page<TaskEntity> page = taskJpaRepository.findAll(pageable);
+
+        List<Task> tasks = page.getContent()
                 .stream()
                 .map(this::toDomain)
                 .toList();
+
+        return new TaskPage(
+                tasks,
+                page.getNumber(),
+                page.getSize(),
+                page.getTotalElements(),
+                page.getTotalPages()
+        );
     }
 
     @Override

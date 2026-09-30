@@ -1,9 +1,8 @@
 package com.julian.task_manager.domain.port.in;
 
-import java.util.List;
-
-import com.julian.task_manager.application.dto.TaskResponse;
+import com.julian.task_manager.application.dto.TaskPageResponse;
+import com.julian.task_manager.domain.model.TaskPageRequest;
 
 public interface GetAllTasksUseCase {
-    List<TaskResponse> getAll();
+    TaskPageResponse getAll(TaskPageRequest pageRequest);
 }
