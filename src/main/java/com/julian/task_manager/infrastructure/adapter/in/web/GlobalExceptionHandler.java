@@ -1,6 +1,7 @@
 package com.julian.task_manager.infrastructure.adapter.in.web;
 
 import java.time.Instant;
+import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -25,7 +26,7 @@ public class GlobalExceptionHandler {
         return new ErrorResponse(
                 Instant.now(),
                 HttpStatus.NOT_FOUND.value(),
-                ex.getMessage(),
+                List.of(ex.getMessage()),
                 request.getRequestURI()
         );
     }
@@ -39,7 +40,7 @@ public class GlobalExceptionHandler {
         return new ErrorResponse(
                 Instant.now(),
                 HttpStatus.CONFLICT.value(),
-                ex.getMessage(),
+                List.of(ex.getMessage()),
                 request.getRequestURI()
         );
     }
@@ -50,7 +51,7 @@ public class GlobalExceptionHandler {
             MethodArgumentNotValidException ex,
             HttpServletRequest request) {
 
-        String error = ex.getBindingResult()
+        ex.getBindingResult()
                 .getFieldErrors()
                 .stream()
                 .findFirst()
@@ -60,7 +61,7 @@ public class GlobalExceptionHandler {
         return new ErrorResponse(
                 Instant.now(),
                 HttpStatus.BAD_REQUEST.value(),
-                error,
+                List.of(ex.getMessage()),
                 request.getRequestURI()
         );
     }

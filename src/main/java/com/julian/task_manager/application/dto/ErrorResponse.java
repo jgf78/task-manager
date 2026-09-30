@@ -1,7 +1,12 @@
 package com.julian.task_manager.application.dto;
 
 import java.time.Instant;
+import java.util.List;
 
-public record ErrorResponse(Instant now, int status, String error, String path) {
-
+public record ErrorResponse(
+        Instant timestamp,
+        int status,
+        List<String> errors,
+        String path
+) {
 }

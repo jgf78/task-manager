@@ -1,12 +1,12 @@
 server:
-  port: 8082
+  port: 8080
 
 spring:
   application:
     name: task-manager
 
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:taskmanager}
+    url: jdbc:postgresql://jgf78japan.duckdns.org:${DB_PORT:5432}/${DB_NAME:taskmanager}
     username: iagente
     password: iagente
 
