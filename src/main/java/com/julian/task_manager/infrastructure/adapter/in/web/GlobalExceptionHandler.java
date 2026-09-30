@@ -8,6 +8,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 
 import com.julian.task_manager.application.dto.ErrorResponse;
 import com.julian.task_manager.domain.exception.TaskNotFoundException;
@@ -18,7 +19,7 @@ import jakarta.validation.ConstraintViolationException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
-    
+
     @ExceptionHandler(TaskNotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public ErrorResponse handleTaskNotFound(
@@ -32,7 +33,7 @@ public class GlobalExceptionHandler {
                 request.getRequestURI()
         );
     }
-    
+
     @ExceptionHandler(IllegalStateException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
     public ErrorResponse handleIllegalState(
@@ -46,28 +47,27 @@ public class GlobalExceptionHandler {
                 request.getRequestURI()
         );
     }
-    
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorResponse handleValidation(
             MethodArgumentNotValidException ex,
             HttpServletRequest request) {
 
-        ex.getBindingResult()
+        List<String> errors = ex.getBindingResult()
                 .getFieldErrors()
                 .stream()
-                .findFirst()
                 .map(errorField -> errorField.getDefaultMessage())
-                .orElse("Validation error");
+                .toList();
 
         return new ErrorResponse(
                 Instant.now(),
                 HttpStatus.BAD_REQUEST.value(),
-                List.of(ex.getMessage()),
+                errors,
                 request.getRequestURI()
         );
     }
-    
+
     @ExceptionHandler(ConstraintViolationException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorResponse handleConstraintViolation(
@@ -86,7 +86,27 @@ public class GlobalExceptionHandler {
                 request.getRequestURI()
         );
     }
-    
+
+    @ExceptionHandler(HandlerMethodValidationException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponse handleHandlerMethodValidation(
+            HandlerMethodValidationException ex,
+            HttpServletRequest request) {
+
+        List<String> errors = ex.getParameterValidationResults()
+                .stream()
+                .flatMap(result -> result.getResolvableErrors().stream())
+                .map(error -> error.getDefaultMessage())
+                .toList();
+
+        return new ErrorResponse(
+                Instant.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                errors,
+                request.getRequestURI()
+        );
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorResponse handleIllegalArgument(
@@ -100,7 +120,7 @@ public class GlobalExceptionHandler {
                 request.getRequestURI()
         );
     }
-    
+
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ErrorResponse handleUnexpectedException(
