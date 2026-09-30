@@ -2,6 +2,7 @@ package com.julian.task_manager.infrastructure.adapter.in.web;
 
 import java.util.List;
 
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -23,7 +24,9 @@ import com.julian.task_manager.domain.port.in.GetTaskUseCase;
 import com.julian.task_manager.domain.port.in.UpdateTaskUseCase;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
 
+@Validated
 @RestController
 @RequestMapping("/api/tasks")
 public class TaskController {
@@ -53,7 +56,7 @@ public class TaskController {
     }
 
     @GetMapping("/{id}")
-    public TaskResponse getById(@PathVariable Long id) {
+    public TaskResponse getById(@PathVariable @Positive Long id) {
 
         return getTaskUseCase.getById(id);
     }
@@ -65,18 +68,18 @@ public class TaskController {
     }
 
     @DeleteMapping("/{id}")
-    public void delete(@PathVariable Long id) {
+    public void delete(@PathVariable @Positive Long id) {
         deleteTaskUseCase.deleteById(id);
     }
 
     @PutMapping("/{id}")
-    public TaskResponse update(@PathVariable Long id, @Valid @RequestBody UpdateTaskRequest request) {
+    public TaskResponse update(@PathVariable @Positive Long id, @Valid @RequestBody UpdateTaskRequest request) {
 
         return updateTaskUseCase.update(id, request);
     }
 
     @PatchMapping("/{id}/complete")
-    public TaskResponse complete(@PathVariable Long id) {
+    public TaskResponse complete(@PathVariable @Positive Long id) {
 
         return completeTaskUseCase.complete(id);
     }
