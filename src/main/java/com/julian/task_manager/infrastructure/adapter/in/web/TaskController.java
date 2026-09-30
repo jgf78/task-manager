@@ -25,6 +25,7 @@ import com.julian.task_manager.domain.port.in.GetTaskUseCase;
 import com.julian.task_manager.domain.port.in.UpdateTaskUseCase;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Positive;
 
@@ -71,6 +72,7 @@ public class TaskController {
 
             @RequestParam(defaultValue = "10")
             @Min(value = 1, message = "Size must be greater than 0")
+            @Max(value = 100, message = "Size cannot exceed 100")
             int size) {
 
         return getAllTasksUseCase.getAll(
