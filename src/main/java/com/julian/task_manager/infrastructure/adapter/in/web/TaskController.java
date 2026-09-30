@@ -22,6 +22,8 @@ import com.julian.task_manager.domain.port.in.GetAllTasksUseCase;
 import com.julian.task_manager.domain.port.in.GetTaskUseCase;
 import com.julian.task_manager.domain.port.in.UpdateTaskUseCase;
 
+import jakarta.validation.Valid;
+
 @RestController
 @RequestMapping("/api/tasks")
 public class TaskController {
@@ -45,7 +47,7 @@ public class TaskController {
     }
 
     @PostMapping
-    public TaskResponse create(@RequestBody(required = true) CreateTaskRequest request) {
+    public TaskResponse create(@Valid @RequestBody(required = true) CreateTaskRequest request) {
 
         return createTaskUseCase.create(request);
     }
@@ -68,7 +70,7 @@ public class TaskController {
     }
 
     @PutMapping("/{id}")
-    public TaskResponse update(@PathVariable Long id, @RequestBody UpdateTaskRequest request) {
+    public TaskResponse update(@PathVariable Long id, @Valid @RequestBody UpdateTaskRequest request) {
 
         return updateTaskUseCase.update(id, request);
     }

@@ -3,6 +3,7 @@ package com.julian.task_manager.infrastructure.adapter.in.web;
 import java.time.Instant;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -39,6 +40,27 @@ public class GlobalExceptionHandler {
                 Instant.now(),
                 HttpStatus.CONFLICT.value(),
                 ex.getMessage(),
+                request.getRequestURI()
+        );
+    }
+    
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponse handleValidation(
+            MethodArgumentNotValidException ex,
+            HttpServletRequest request) {
+
+        String error = ex.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .findFirst()
+                .map(errorField -> errorField.getDefaultMessage())
+                .orElse("Validation error");
+
+        return new ErrorResponse(
+                Instant.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                error,
                 request.getRequestURI()
         );
     }
