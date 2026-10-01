@@ -2,7 +2,7 @@
 FROM eclipse-temurin:25-jdk
 
 # Etiquetas de metadatos 
-LABEL module.name="mail-service" \
+LABEL module.name="task-manager" \
       module.maintainer="julian.rss.android@gmail.com"
 
 # Directorio de trabajo dentro del contenedor
@@ -12,7 +12,7 @@ WORKDIR /app
 COPY target/task-manager-0.0.1-SNAPSHOT.jar app.jar
 
 # Exponemos el puerto de la aplicación
-EXPOSE 8080
+EXPOSE 8082
 
 # Variables de entorno para ajustar la JVM
 ENV JVM_INITIAL_JAVA_HEAP=256m

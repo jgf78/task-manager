@@ -7,8 +7,8 @@ spring:
 
   datasource:
     url: jdbc:postgresql://jgf78japan.duckdns.org:${DB_PORT:5432}/${DB_NAME:taskmanager}
-    username: iagente
-    password: iagente
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
 
   jpa:
     hibernate:

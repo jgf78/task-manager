@@ -1,0 +1,17 @@
+services:
+
+task-manager:
+  image: jgf78/task-manager:latest
+  container_name: task-manager
+
+  ports:
+    - "8082:8082"
+
+  environment:
+    DB_HOST: jgf78japan.duckdns.org
+    DB_PORT: 5432
+    DB_NAME: taskmanager
+    DB_USERNAME: iagente
+    DB_PASSWORD: iagente
+
+  restart: unless-stopped
