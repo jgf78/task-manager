@@ -2,6 +2,7 @@ package com.julian.task_manager.domain.model;
 
 public record TaskPageRequest(
         int page,
-        int size
+        int size,
+        TaskSort sort
 ) {
 }

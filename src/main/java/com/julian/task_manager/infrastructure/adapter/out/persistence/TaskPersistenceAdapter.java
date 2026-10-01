@@ -6,6 +6,7 @@ import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 import com.julian.task_manager.domain.model.Task;
 import com.julian.task_manager.domain.model.TaskPage;
@@ -40,9 +41,19 @@ public class TaskPersistenceAdapter implements TaskRepository {
     @Override
     public TaskPage findAll(TaskPageRequest pageRequest) {
 
+        Sort.Direction direction = Sort.Direction.valueOf(
+                pageRequest.sort().direction().name()
+        );
+
+        Sort sort = Sort.by(
+                direction,
+                pageRequest.sort().field().getProperty()
+        );
+        
         Pageable pageable = PageRequest.of(
                 pageRequest.page(),
-                pageRequest.size()
+                pageRequest.size(),
+                sort
         );
 
         Page<TaskEntity> page = taskJpaRepository.findAll(pageable);

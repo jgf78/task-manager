@@ -16,7 +16,10 @@ import com.julian.task_manager.application.dto.CreateTaskRequest;
 import com.julian.task_manager.application.dto.TaskPageResponse;
 import com.julian.task_manager.application.dto.TaskResponse;
 import com.julian.task_manager.application.dto.UpdateTaskRequest;
+import com.julian.task_manager.domain.model.SortDirection;
 import com.julian.task_manager.domain.model.TaskPageRequest;
+import com.julian.task_manager.domain.model.TaskSort;
+import com.julian.task_manager.domain.model.TaskSortField;
 import com.julian.task_manager.domain.port.in.CompleteTaskUseCase;
 import com.julian.task_manager.domain.port.in.CreateTaskUseCase;
 import com.julian.task_manager.domain.port.in.DeleteTaskUseCase;
@@ -73,11 +76,23 @@ public class TaskController {
             @RequestParam(defaultValue = "10")
             @Min(value = 1, message = "Size must be greater than 0")
             @Max(value = 100, message = "Size cannot exceed 100")
-            int size) {
+            int size,
 
-        return getAllTasksUseCase.getAll(
-                new TaskPageRequest(page, size)
+            @RequestParam(defaultValue = "CREATED_AT")
+            TaskSortField sortBy,
+
+            @RequestParam(defaultValue = "DESC")
+            SortDirection direction) {
+
+        TaskSort sort = new TaskSort(sortBy, direction);
+
+        TaskPageRequest pageRequest = new TaskPageRequest(
+                page,
+                size,
+                sort
         );
+
+        return getAllTasksUseCase.getAll(pageRequest);
     }
 
     @DeleteMapping("/{id}")

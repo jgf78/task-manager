@@ -1,24 +1,33 @@
 package com.julian.task_manager.infrastructure.adapter.in.web;
 
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import com.julian.task_manager.application.dto.ErrorResponse;
 import com.julian.task_manager.domain.exception.TaskNotFoundException;
 
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+    private static final String UNKNOWN_ERROR = "Unknown error";
+    private static final String VALIDATION_FAILED = "Validation failed";
+    private static final String INTERNAL_SERVER_ERROR = "Internal server error";
+    private static final String INVALID_PARAMETER_PREFIX = "Invalid value for parameter '";
 
     @ExceptionHandler(TaskNotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
@@ -26,12 +35,7 @@ public class GlobalExceptionHandler {
             TaskNotFoundException ex,
             HttpServletRequest request) {
 
-        return new ErrorResponse(
-                Instant.now(),
-                HttpStatus.NOT_FOUND.value(),
-                List.of(ex.getMessage()),
-                request.getRequestURI()
-        );
+        return buildErrorResponse(HttpStatus.NOT_FOUND, List.of(safeMessage(ex.getMessage())), request);
     }
 
     @ExceptionHandler(IllegalStateException.class)
@@ -40,12 +44,7 @@ public class GlobalExceptionHandler {
             IllegalStateException ex,
             HttpServletRequest request) {
 
-        return new ErrorResponse(
-                Instant.now(),
-                HttpStatus.CONFLICT.value(),
-                List.of(ex.getMessage()),
-                request.getRequestURI()
-        );
+        return buildErrorResponse(HttpStatus.CONFLICT, List.of(safeMessage(ex.getMessage())), request);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -57,15 +56,10 @@ public class GlobalExceptionHandler {
         List<String> errors = ex.getBindingResult()
                 .getFieldErrors()
                 .stream()
-                .map(errorField -> errorField.getDefaultMessage())
+                .map(errorField -> safeMessage(errorField.getDefaultMessage(), VALIDATION_FAILED))
                 .toList();
 
-        return new ErrorResponse(
-                Instant.now(),
-                HttpStatus.BAD_REQUEST.value(),
-                errors,
-                request.getRequestURI()
-        );
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, errors, request);
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
@@ -76,15 +70,10 @@ public class GlobalExceptionHandler {
 
         List<String> errors = ex.getConstraintViolations()
                 .stream()
-                .map(ConstraintViolation::getMessage)
+                .map(violation -> safeMessage(violation.getMessage(), VALIDATION_FAILED))
                 .toList();
 
-        return new ErrorResponse(
-                Instant.now(),
-                HttpStatus.BAD_REQUEST.value(),
-                errors,
-                request.getRequestURI()
-        );
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, errors, request);
     }
 
     @ExceptionHandler(HandlerMethodValidationException.class)
@@ -96,15 +85,10 @@ public class GlobalExceptionHandler {
         List<String> errors = ex.getParameterValidationResults()
                 .stream()
                 .flatMap(result -> result.getResolvableErrors().stream())
-                .map(error -> error.getDefaultMessage())
+                .map(error -> safeMessage(error.getDefaultMessage(), VALIDATION_FAILED))
                 .toList();
 
-        return new ErrorResponse(
-                Instant.now(),
-                HttpStatus.BAD_REQUEST.value(),
-                errors,
-                request.getRequestURI()
-        );
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, errors, request);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
@@ -113,12 +97,7 @@ public class GlobalExceptionHandler {
             IllegalArgumentException ex,
             HttpServletRequest request) {
 
-        return new ErrorResponse(
-                Instant.now(),
-                HttpStatus.BAD_REQUEST.value(),
-                List.of(ex.getMessage()),
-                request.getRequestURI()
-        );
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, List.of(safeMessage(ex.getMessage())), request);
     }
 
     @ExceptionHandler(Exception.class)
@@ -127,11 +106,46 @@ public class GlobalExceptionHandler {
             Exception ex,
             HttpServletRequest request) {
 
+        log.error("Unexpected exception at {}", request.getRequestURI(), ex);
+        return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, List.of(INTERNAL_SERVER_ERROR), request);
+    }
+    
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponse handleTypeMismatch(
+            MethodArgumentTypeMismatchException ex,
+            HttpServletRequest request) {
+
+        String errorMessage;
+
+        if (ex.getRequiredType() != null && ex.getRequiredType().isEnum()) {
+            errorMessage = INVALID_PARAMETER_PREFIX + ex.getName()
+                    + "'. Allowed values: "
+                    + String.join(", ",
+                            Arrays.stream(ex.getRequiredType().getEnumConstants())
+                                    .map(Object::toString)
+                                    .toList());
+        } else {
+            errorMessage = INVALID_PARAMETER_PREFIX + ex.getName() + "'";
+        }
+
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, List.of(errorMessage), request);
+    }
+
+    private ErrorResponse buildErrorResponse(HttpStatus status, List<String> errors, HttpServletRequest request) {
         return new ErrorResponse(
                 Instant.now(),
-                HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                List.of("Internal server error"),
+                status.value(),
+                errors,
                 request.getRequestURI()
         );
+    }
+
+    private String safeMessage(String message) {
+        return safeMessage(message, UNKNOWN_ERROR);
+    }
+
+    private String safeMessage(String message, String fallback) {
+        return message != null ? message : fallback;
     }
 }
