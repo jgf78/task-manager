@@ -58,7 +58,7 @@ public class TaskPersistenceAdapter implements TaskRepository {
 
         Page<TaskEntity> page;
 
-        if (pageRequest.status() == null) {
+        if (pageRequest.filter().status() == null) {
 
             page = taskJpaRepository.findAll(pageable);
 

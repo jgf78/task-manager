@@ -17,6 +17,7 @@ import com.julian.task_manager.application.dto.TaskPageResponse;
 import com.julian.task_manager.application.dto.TaskResponse;
 import com.julian.task_manager.application.dto.UpdateTaskRequest;
 import com.julian.task_manager.domain.model.SortDirection;
+import com.julian.task_manager.domain.model.TaskFilter;
 import com.julian.task_manager.domain.model.TaskPageRequest;
 import com.julian.task_manager.domain.model.TaskSort;
 import com.julian.task_manager.domain.model.TaskSortField;
@@ -88,13 +89,19 @@ public class TaskController {
             @RequestParam(required = false)
             TaskStatus status) {
 
-        TaskSort sort = new TaskSort(sortBy, direction);
+        TaskSort sort = new TaskSort(
+                sortBy,
+                direction
+        );
+
+        TaskFilter filter = new TaskFilter(status);
 
         TaskPageRequest pageRequest = new TaskPageRequest(
                 page,
                 size,
                 sort,
-                status
+                status, 
+                filter
         );
 
         return getAllTasksUseCase.getAll(pageRequest);

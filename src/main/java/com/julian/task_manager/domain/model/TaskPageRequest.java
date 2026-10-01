@@ -4,6 +4,7 @@ public record TaskPageRequest(
         int page,
         int size,
         TaskSort sort,
-        TaskStatus status
+        TaskStatus status,
+        TaskFilter filter
 ) {
 }
