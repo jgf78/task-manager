@@ -87,14 +87,20 @@ public class TaskController {
             SortDirection direction,
 
             @RequestParam(required = false)
-            TaskStatus status) {
+            TaskStatus status,
+
+            @RequestParam(required = false)
+            String title) {
 
         TaskSort sort = new TaskSort(
                 sortBy,
                 direction
         );
 
-        TaskFilter filter = new TaskFilter(status);
+        TaskFilter filter = new TaskFilter(
+                status,
+                title
+        );
 
         TaskPageRequest pageRequest = new TaskPageRequest(
                 page,

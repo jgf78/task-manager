@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 
 import com.julian.task_manager.domain.model.Task;
 import com.julian.task_manager.domain.model.TaskPage;
@@ -56,19 +57,16 @@ public class TaskPersistenceAdapter implements TaskRepository {
                 sort
         );
 
-        Page<TaskEntity> page;
+        Specification<TaskEntity> specification =
+                TaskSpecifications.withFilter(
+                        pageRequest.filter()
+                );
 
-        if (pageRequest.filter().status() == null) {
-
-            page = taskJpaRepository.findAll(pageable);
-
-        } else {
-
-            page = taskJpaRepository.findAllByStatus(
-                    pageRequest.status(),
-                    pageable
-            );
-        }
+        Page<TaskEntity> page =
+                taskJpaRepository.findAll(
+                        specification,
+                        pageable
+                );
 
         List<Task> tasks = page.getContent()
                 .stream()
@@ -83,7 +81,7 @@ public class TaskPersistenceAdapter implements TaskRepository {
                 page.getTotalPages()
         );
     }
-
+    
     @Override
     public void deleteById(Long id) {
 
