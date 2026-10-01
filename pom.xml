@@ -81,7 +81,7 @@
             <scope>test</scope>
         </dependency>
         
-         <!-- .env -->
+        <!-- .env -->
         <dependency>
             <groupId>me.paulschwarz</groupId>
             <artifactId>spring-dotenv</artifactId>
