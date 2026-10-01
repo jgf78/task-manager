@@ -12,7 +12,7 @@ WORKDIR /app
 COPY target/task-manager-0.0.1-SNAPSHOT.jar app.jar
 
 # Exponemos el puerto de la aplicación
-EXPOSE 8082
+EXPOSE 8087
 
 # Variables de entorno para ajustar la JVM
 ENV JVM_INITIAL_JAVA_HEAP=256m
