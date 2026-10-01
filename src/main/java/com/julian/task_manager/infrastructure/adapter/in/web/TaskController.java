@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.julian.task_manager.application.dto.CreateTaskRequest;
+import com.julian.task_manager.application.dto.ErrorResponse;
 import com.julian.task_manager.application.dto.TaskPageResponse;
 import com.julian.task_manager.application.dto.TaskResponse;
 import com.julian.task_manager.application.dto.UpdateTaskRequest;
@@ -31,6 +32,8 @@ import com.julian.task_manager.domain.port.in.UpdateTaskUseCase;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -76,11 +79,21 @@ public class TaskController {
     )
     @ApiResponse(
             responseCode = "200",
-            description = "Task created successfully"
+            description = "Task created successfully",
+            content = @Content(
+                    schema = @Schema(
+                            implementation = TaskResponse.class
+                    )
+            )
     )
     @ApiResponse(
             responseCode = "400",
-            description = "Invalid request"
+            description = "Invalid request",
+            content = @Content(
+                    schema = @Schema(
+                            implementation = ErrorResponse.class
+                    )
+            )
     )
     @PostMapping
     public TaskResponse create(
@@ -95,15 +108,30 @@ public class TaskController {
     )
     @ApiResponse(
             responseCode = "200",
-            description = "Task found"
+            description = "Task found",
+            content = @Content(
+                    schema = @Schema(
+                            implementation = TaskResponse.class
+                    )
+            )
     )
     @ApiResponse(
             responseCode = "400",
-            description = "Invalid task ID"
+            description = "Invalid task ID",
+            content = @Content(
+                    schema = @Schema(
+                            implementation = ErrorResponse.class
+                    )
+            )
     )
     @ApiResponse(
             responseCode = "404",
-            description = "Task not found"
+            description = "Task not found",
+            content = @Content(
+                    schema = @Schema(
+                            implementation = ErrorResponse.class
+                    )
+            )
     )
     @GetMapping("/{id}")
     public TaskResponse getById(
@@ -122,11 +150,21 @@ public class TaskController {
     )
     @ApiResponse(
             responseCode = "200",
-            description = "Tasks retrieved successfully"
+            description = "Tasks retrieved successfully",
+            content = @Content(
+                    schema = @Schema(
+                            implementation = TaskPageResponse.class
+                    )
+            )
     )
     @ApiResponse(
             responseCode = "400",
-            description = "Invalid pagination, sorting or filtering parameters"
+            description = "Invalid pagination, sorting or filtering parameters",
+            content = @Content(
+                    schema = @Schema(
+                            implementation = ErrorResponse.class
+                    )
+            )
     )
     @GetMapping
     public TaskPageResponse getAll(
@@ -215,11 +253,21 @@ public class TaskController {
     )
     @ApiResponse(
             responseCode = "400",
-            description = "Invalid task ID"
+            description = "Invalid task ID",
+            content = @Content(
+                    schema = @Schema(
+                            implementation = ErrorResponse.class
+                    )
+            )
     )
     @ApiResponse(
             responseCode = "404",
-            description = "Task not found"
+            description = "Task not found",
+            content = @Content(
+                    schema = @Schema(
+                            implementation = ErrorResponse.class
+                    )
+            )
     )
     @DeleteMapping("/{id}")
     public void delete(
@@ -238,15 +286,30 @@ public class TaskController {
     )
     @ApiResponse(
             responseCode = "200",
-            description = "Task updated successfully"
+            description = "Task updated successfully",
+            content = @Content(
+                    schema = @Schema(
+                            implementation = TaskResponse.class
+                    )
+            )
     )
     @ApiResponse(
             responseCode = "400",
-            description = "Invalid request"
+            description = "Invalid request",
+            content = @Content(
+                    schema = @Schema(
+                            implementation = ErrorResponse.class
+                    )
+            )
     )
     @ApiResponse(
             responseCode = "404",
-            description = "Task not found"
+            description = "Task not found",
+            content = @Content(
+                    schema = @Schema(
+                            implementation = ErrorResponse.class
+                    )
+            )
     )
     @PutMapping("/{id}")
     public TaskResponse update(
@@ -268,19 +331,39 @@ public class TaskController {
     )
     @ApiResponse(
             responseCode = "200",
-            description = "Task completed successfully"
+            description = "Task completed successfully",
+            content = @Content(
+                    schema = @Schema(
+                            implementation = TaskResponse.class
+                    )
+            )
     )
     @ApiResponse(
             responseCode = "400",
-            description = "Invalid task ID"
+            description = "Invalid task ID",
+            content = @Content(
+                    schema = @Schema(
+                            implementation = ErrorResponse.class
+                    )
+            )
     )
     @ApiResponse(
             responseCode = "404",
-            description = "Task not found"
+            description = "Task not found",
+            content = @Content(
+                    schema = @Schema(
+                            implementation = ErrorResponse.class
+                    )
+            )
     )
     @ApiResponse(
             responseCode = "409",
-            description = "Task is already completed"
+            description = "Task is already completed",
+            content = @Content(
+                    schema = @Schema(
+                            implementation = ErrorResponse.class
+                    )
+            )
     )
     @PatchMapping("/{id}/complete")
     public TaskResponse complete(
