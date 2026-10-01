@@ -20,6 +20,7 @@ import com.julian.task_manager.domain.model.SortDirection;
 import com.julian.task_manager.domain.model.TaskPageRequest;
 import com.julian.task_manager.domain.model.TaskSort;
 import com.julian.task_manager.domain.model.TaskSortField;
+import com.julian.task_manager.domain.model.TaskStatus;
 import com.julian.task_manager.domain.port.in.CompleteTaskUseCase;
 import com.julian.task_manager.domain.port.in.CreateTaskUseCase;
 import com.julian.task_manager.domain.port.in.DeleteTaskUseCase;
@@ -82,14 +83,18 @@ public class TaskController {
             TaskSortField sortBy,
 
             @RequestParam(defaultValue = "DESC")
-            SortDirection direction) {
+            SortDirection direction,
+
+            @RequestParam(required = false)
+            TaskStatus status) {
 
         TaskSort sort = new TaskSort(sortBy, direction);
 
         TaskPageRequest pageRequest = new TaskPageRequest(
                 page,
                 size,
-                sort
+                sort,
+                status
         );
 
         return getAllTasksUseCase.getAll(pageRequest);

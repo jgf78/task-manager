@@ -49,14 +49,26 @@ public class TaskPersistenceAdapter implements TaskRepository {
                 direction,
                 pageRequest.sort().field().getProperty()
         );
-        
+
         Pageable pageable = PageRequest.of(
                 pageRequest.page(),
                 pageRequest.size(),
                 sort
         );
 
-        Page<TaskEntity> page = taskJpaRepository.findAll(pageable);
+        Page<TaskEntity> page;
+
+        if (pageRequest.status() == null) {
+
+            page = taskJpaRepository.findAll(pageable);
+
+        } else {
+
+            page = taskJpaRepository.findAllByStatus(
+                    pageRequest.status(),
+                    pageable
+            );
+        }
 
         List<Task> tasks = page.getContent()
                 .stream()
