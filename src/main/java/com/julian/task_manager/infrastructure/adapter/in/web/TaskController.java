@@ -58,7 +58,7 @@ public class TaskController {
     }
 
     @PostMapping
-    public TaskResponse create(@Valid @RequestBody(required = true) CreateTaskRequest request) {
+    public TaskResponse create(@Valid @RequestBody CreateTaskRequest request) {
 
         return createTaskUseCase.create(request);
     }
@@ -106,7 +106,6 @@ public class TaskController {
                 page,
                 size,
                 sort,
-                status, 
                 filter
         );
 
