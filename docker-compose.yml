@@ -8,10 +8,10 @@ task-manager:
     - "8087:8087"
 
   environment:
-    DB_HOST: jgf78japan.duckdns.org
+    DB_HOST: xxxxxxx
     DB_PORT: 5432
     DB_NAME: taskmanager
-    DB_USERNAME: iagente
-    DB_PASSWORD: iagente
+    DB_USERNAME: xxxxx
+    DB_PASSWORD: xxxxx
 
   restart: unless-stopped
