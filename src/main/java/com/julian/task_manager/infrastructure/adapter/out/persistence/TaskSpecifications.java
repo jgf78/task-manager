@@ -1,8 +1,16 @@
 package com.julian.task_manager.infrastructure.adapter.out.persistence;
 
+import java.util.ArrayList;
+import java.util.Locale;
+
 import org.springframework.data.jpa.domain.Specification;
 
 import com.julian.task_manager.domain.model.TaskFilter;
+
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
 
 public final class TaskSpecifications {
 
@@ -12,14 +20,15 @@ public final class TaskSpecifications {
     public static Specification<TaskEntity> withFilter(
             TaskFilter filter) {
 
-        return (root, query, criteriaBuilder) -> {
+        return (Root<TaskEntity> root,
+                @SuppressWarnings("unused") CriteriaQuery<?> query,
+                CriteriaBuilder criteriaBuilder) -> {
 
             if (filter == null) {
                 return criteriaBuilder.conjunction();
             }
 
-            var predicates = new java.util.ArrayList<
-                    jakarta.persistence.criteria.Predicate>();
+            var predicates = new ArrayList<Predicate>();
 
             if (filter.status() != null) {
 
@@ -34,19 +43,21 @@ public final class TaskSpecifications {
             if (filter.title() != null
                     && !filter.title().isBlank()) {
 
+                var titleFilter = "%" + filter.title().toLowerCase(Locale.ROOT) + "%";
+
                 predicates.add(
                         criteriaBuilder.like(
                                 criteriaBuilder.lower(
                                         root.get("title")
                                 ),
-                                "%" + filter.title().toLowerCase() + "%"
+                                titleFilter
                         )
                 );
             }
 
             return criteriaBuilder.and(
                     predicates.toArray(
-                            new jakarta.persistence.criteria.Predicate[0]
+                            new Predicate[0]
                     )
             );
         };

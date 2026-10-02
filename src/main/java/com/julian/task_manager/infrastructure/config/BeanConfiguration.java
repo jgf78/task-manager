@@ -16,16 +16,9 @@ import com.julian.task_manager.domain.port.in.GetAllTasksUseCase;
 import com.julian.task_manager.domain.port.in.GetTaskUseCase;
 import com.julian.task_manager.domain.port.in.UpdateTaskUseCase;
 import com.julian.task_manager.domain.port.out.TaskRepository;
-import com.julian.task_manager.infrastructure.adapter.out.persistence.TaskJpaRepository;
-import com.julian.task_manager.infrastructure.adapter.out.persistence.TaskPersistenceAdapter;
 
 @Configuration
 public class BeanConfiguration {
-
-    @Bean
-    TaskRepository taskRepository(TaskJpaRepository taskJpaRepository) {
-        return new TaskPersistenceAdapter(taskJpaRepository);
-    }
 
     @Bean
     CreateTaskUseCase createTaskUseCase(TaskRepository taskRepository) {

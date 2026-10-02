@@ -2,19 +2,15 @@ server:
   port: 8080
 
 spring:
+  config:
+    import: optional:file:.env[.properties]
+
+  profiles:
+    active: ${DATABASE_TYPE:postgres}
+
   application:
     name: task-manager
 
-  datasource:
-    url: jdbc:postgresql://jgf78japan.duckdns.org:${DB_PORT:5432}/${DB_NAME:taskmanager}
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
-
-  jpa:
-    hibernate:
-      ddl-auto: none
-    show-sql: true
-    
 logging:
   file:
     path: ${LOG_PATH:./target/}
@@ -24,4 +20,3 @@ logging:
     com.julian: ${LOG_LEVEL_APP:DEBUG}
     org.springframework.boot: ${LOG_LEVEL_SPRING_BOOT:INFO}
     org.springframework.web: ${LOG_LEVEL_SPRING_WEB:INFO}
-    
