@@ -28,6 +28,10 @@ La aplicación proporciona:
 
 💾 Persistencia en PostgreSQL
 
+🍃 Persistencia en MongoDB
+
+🔄 Selección de base de datos mediante variables de entorno
+
 ✅ Validación de datos
 
 ❌ Gestión centralizada de errores
@@ -67,6 +71,10 @@ La aplicación proporciona:
 🔍 Búsqueda por título
 
 💾 PostgreSQL
+
+🍃 MongoDB
+
+🔄 Persistencia intercambiable
 
 ✅ Bean Validation
 
@@ -120,16 +128,31 @@ La arquitectura se divide principalmente en:
                     │   TaskRepository     │
                     └──────────┬───────────┘
                                │
-                               ▼
-                    ┌──────────────────────┐
-                    │   Persistence        │
-                    │   JPA / PostgreSQL   │
-                    └──────────────────────┘
+                    ┌──────────┴───────────┐
+                    │                      │
+                    ▼                      ▼
+          ┌──────────────────┐   ┌──────────────────┐
+          │ PostgreSQL       │   │ MongoDB          │
+          │ JPA Adapter      │   │ Mongo Adapter     │
+          └──────────────────┘   └──────────────────┘
 ```
 
-La lógica de negocio no depende directamente de Spring, JPA o PostgreSQL.
+La lógica de negocio no depende directamente de PostgreSQL, MongoDB, JPA o Spring Data.
 
 Las tecnologías externas se conectan al dominio mediante adaptadores y puertos.
+
+La implementación de persistencia se selecciona mediante la variable:
+
+```text
+DATABASE_TYPE
+```
+
+Valores disponibles:
+
+```text
+postgres
+mongodb
+```
 
 ---
 
@@ -206,7 +229,9 @@ task-manager/
 │   │   │           ├── config/
 │   │   │           │
 │   │   │           │   ├── BeanConfiguration
-│   │   │           │   └── OpenApiConfiguration
+│   │   │           │   ├── OpenApiConfiguration
+│   │   │           │   ├── MongoPersistenceConfiguration
+│   │   │           │   └── PostgresPersistenceConfiguration
 │   │   │           │
 │   │   │           └── adapter/
 │   │   │
@@ -217,17 +242,27 @@ task-manager/
 │   │   │               │       └── GlobalExceptionHandler
 │   │   │               │
 │   │   │               └── out/
-│   │   │                   └── persistence/
 │   │   │
-│   │   │                       ├── TaskEntity
-│   │   │                       ├── TaskJpaRepository
-│   │   │                       ├── TaskPersistenceAdapter
-│   │   │                       └── TaskSpecifications
+│   │   │                   ├── persistence/
+│   │   │                   │
+│   │   │                   │   ├── TaskEntity
+│   │   │                   │   ├── TaskJpaRepository
+│   │   │                   │   ├── TaskPersistenceAdapter
+│   │   │                   │   └── TaskSpecifications
+│   │   │                   │
+│   │   │                   └── mongodb/
+│   │   │
+│   │   │                       ├── TaskMongoDocument
+│   │   │                       ├── TaskMongoRepository
+│   │   │                       ├── TaskMongoPersistenceAdapter
+│   │   │                       ├── TaskMongoIdGenerator
+│   │   │                       └── TaskMongoCounter
 │   │   │
 │   │   └── resources/
 │   │
 │   │       ├── application.yml
-│   │       └── application-docker.yml
+│   │       ├── application-postgres.yml
+│   │       └── application-mongodb.yml
 │   │
 │   └── test/
 │
@@ -274,9 +309,11 @@ Por ejemplo, una tarea no puede completarse dos veces.
 
 ```text
 PENDING
+
    │
    │ complete()
    ▼
+
 COMPLETED
 ```
 
@@ -292,10 +329,15 @@ La API proporciona las siguientes operaciones:
 
 ```text
 POST   /api/tasks
+
 GET    /api/tasks
+
 GET    /api/tasks/{id}
+
 PUT    /api/tasks/{id}
+
 PATCH  /api/tasks/{id}/complete
+
 DELETE /api/tasks/{id}
 ```
 
@@ -389,7 +431,6 @@ Donde:
 
 ```text
 page = página solicitada, comenzando en 0
-
 size = número de elementos por página
 ```
 
@@ -397,6 +438,16 @@ El tamaño máximo permitido es:
 
 ```text
 100
+```
+
+La respuesta incluye:
+
+```text
+content
+page
+size
+totalElements
+totalPages
 ```
 
 ---
@@ -435,6 +486,8 @@ Ejemplo:
 GET /api/tasks?sortBy=CREATED_AT&direction=DESC
 ```
 
+La ordenación está implementada tanto para PostgreSQL como para MongoDB.
+
 ---
 
 # 🔎 Filtrado
@@ -472,6 +525,8 @@ Ejemplo:
 GET /api/tasks?title=Docker
 ```
 
+La búsqueda por título realiza una búsqueda parcial sin distinguir entre mayúsculas y minúsculas.
+
 Los filtros pueden combinarse con paginación y ordenación.
 
 Ejemplo:
@@ -479,6 +534,8 @@ Ejemplo:
 ```http
 GET /api/tasks?page=0&size=10&sortBy=CREATED_AT&direction=DESC&status=PENDING&title=Docker
 ```
+
+Estos filtros están implementados tanto para PostgreSQL como para MongoDB.
 
 ---
 
@@ -525,8 +582,10 @@ La operación cambia el estado:
 
 ```text
 PENDING
+
    │
    ▼
+
 COMPLETED
 ```
 
@@ -652,105 +711,213 @@ size <= 100
 
 ================
 
-La aplicación utiliza PostgreSQL para almacenar las tareas.
-
 La persistencia está desacoplada mediante el puerto:
 
 ```text
 TaskRepository
 ```
 
-La infraestructura implementa este puerto mediante:
+La aplicación dispone actualmente de **dos implementaciones de persistencia**:
 
 ```text
-TaskPersistenceAdapter
+PostgreSQL
+MongoDB
 ```
 
-Spring Data JPA se utiliza exclusivamente en la capa de infraestructura.
+La implementación utilizada se selecciona mediante:
 
-Arquitectura:
+```text
+DATABASE_TYPE
+```
+
+Valores disponibles:
+
+```text
+postgres
+mongodb
+```
+
+La lógica de negocio y los casos de uso no necesitan conocer qué base de datos está siendo utilizada.
+
+---
+
+# 🐘 Persistencia PostgreSQL
+
+============================
+
+Cuando:
+
+```text
+DATABASE_TYPE=postgres
+```
+
+se utiliza Spring Data JPA para acceder a PostgreSQL.
+
+La arquitectura de persistencia es:
 
 ```text
 Application
+
      │
      ▼
+
 TaskRepository
+
      │
      ▼
+
 TaskPersistenceAdapter
+
      │
      ▼
+
 TaskJpaRepository
+
      │
      ▼
+
 PostgreSQL
 ```
 
----
-
-# 🔌 Ports & Adapters
-
-=====================
-
-## 🔵 Input Ports
-
-Los puertos de entrada representan los casos de uso disponibles para los adaptadores externos.
+El adaptador PostgreSQL utiliza:
 
 ```text
-CreateTaskUseCase
-GetTaskUseCase
-GetAllTasksUseCase
-UpdateTaskUseCase
-DeleteTaskUseCase
-CompleteTaskUseCase
-```
-
-El controlador REST depende de estos puertos y no directamente de las implementaciones de los servicios.
-
----
-
-## 🟢 Output Ports
-
-El principal puerto de salida es:
-
-```text
-TaskRepository
-```
-
-La aplicación utiliza esta abstracción para acceder a las tareas sin conocer PostgreSQL, JPA o Spring Data.
-
----
-
-## 🟠 Adapters
-
-### Web Adapter
-
-```text
-TaskController
-```
-
-Se encarga de:
-
-* Recibir peticiones HTTP
-* Validar los datos de entrada
-* Construir los objetos de dominio necesarios
-* Delegar en los casos de uso
-* Devolver las respuestas HTTP
-
-### Persistence Adapter
-
-```text
+TaskEntity
+TaskJpaRepository
 TaskPersistenceAdapter
+TaskSpecifications
 ```
 
-Se encarga de:
+Los filtros dinámicos se implementan mediante Spring Data JPA `Specification`.
 
-* Convertir entidades JPA a modelos de dominio
-* Convertir modelos de dominio a entidades JPA
-* Consultar PostgreSQL
-* Gestionar paginación
-* Gestionar ordenación
-* Aplicar filtros dinámicos
+---
+
+# 🍃 Persistencia MongoDB
+
+==========================
+
+Cuando:
+
+```text
+DATABASE_TYPE=mongodb
+```
+
+se utiliza Spring Data MongoDB.
+
+La arquitectura de persistencia es:
+
+```text
+Application
+
+     │
+     ▼
+
+TaskRepository
+
+     │
+     ▼
+
+TaskMongoPersistenceAdapter
+
+     │
+     ├───────────────┐
+     ▼               ▼
+
+TaskMongoRepository  MongoOperations
+
+     │               │
+     ▼               ▼
+
+MongoDB          Consultas dinámicas
+```
+
+El adaptador MongoDB utiliza:
+
+```text
+TaskMongoDocument
+TaskMongoRepository
+TaskMongoPersistenceAdapter
+TaskMongoIdGenerator
+TaskMongoCounter
+```
+
+Las tareas se almacenan en la colección:
+
+```text
+tasks
+```
+
+MongoDB utiliza un contador independiente para generar identificadores numéricos compatibles con el modelo de dominio:
+
+```text
+counters
+```
+
+El contador no debe eliminarse mientras se utilice la persistencia MongoDB.
+
+---
+
+# 🔄 Selección de base de datos
+
+===============================
+
+La base de datos se selecciona mediante la variable:
+
+```text
+DATABASE_TYPE
+```
+
+## PostgreSQL
+
+```text
+DATABASE_TYPE=postgres
+```
+
+Utiliza:
+
+```text
+application-postgres.yml
+```
+
+y las variables:
+
+```text
+DB_HOST
+DB_PORT
+DB_NAME
+DB_USERNAME
+DB_PASSWORD
+```
+
+## MongoDB
+
+```text
+DATABASE_TYPE=mongodb
+```
+
+Utiliza:
+
+```text
+application-mongodb.yml
+```
+
+y la variable:
+
+```text
+MONGODB_URI
+```
+
+Por ejemplo:
+
+```text
+MONGODB_URI=mongodb://usuario:password@host:27017/taskmanager?authSource=admin
+```
+
+Las dos configuraciones pueden estar presentes simultáneamente.
+
+Únicamente la configuración correspondiente al valor de `DATABASE_TYPE` será utilizada por la aplicación.
+
+Esto permite cambiar de PostgreSQL a MongoDB sin modificar el código de la aplicación.
 
 ---
 
@@ -758,7 +925,7 @@ Se encarga de:
 
 ====================
 
-Los filtros dinámicos de tareas se implementan mediante:
+En PostgreSQL, los filtros dinámicos de tareas se implementan mediante:
 
 ```text
 TaskSpecifications
@@ -773,7 +940,9 @@ status
 title
 ```
 
-Esto permite combinar filtros sin introducir métodos específicos en el repositorio para cada combinación posible.
+En MongoDB, el equivalente se implementa mediante `MongoOperations` y consultas dinámicas con `Criteria` y `Query`.
+
+Esto permite mantener un comportamiento equivalente entre ambas implementaciones de persistencia.
 
 ---
 
@@ -817,25 +986,54 @@ La documentación incluye:
 
 ==================
 
-La aplicación utiliza diferentes configuraciones dependiendo del entorno.
+La aplicación utiliza una configuración común y configuraciones específicas para cada sistema de persistencia.
 
 ```text
 application.yml
-
-application-docker.yml
+application-postgres.yml
+application-mongodb.yml
 ```
 
-La configuración Docker activa el perfil:
+La configuración común define, entre otras propiedades:
 
 ```text
-docker
+server.port
+spring.application.name
+logging
+DATABASE_TYPE
 ```
 
-El proyecto utiliza variables de entorno para configurar la conexión con PostgreSQL.
+La base de datos se selecciona mediante:
+
+```text
+DATABASE_TYPE
+```
+
+Valores disponibles:
+
+```text
+postgres
+mongodb
+```
+
+Por defecto:
+
+```text
+DATABASE_TYPE=postgres
+```
+
+si la variable no está definida.
+
+---
+
+# 🐘 Configuración PostgreSQL
+
+=============================
 
 Variables:
 
 ```text
+DATABASE_TYPE
 DB_HOST
 DB_PORT
 DB_NAME
@@ -846,11 +1044,34 @@ DB_PASSWORD
 Ejemplo:
 
 ```text
-DB_HOST=********
+DATABASE_TYPE=postgres
+
+DB_HOST=localhost
 DB_PORT=5432
 DB_NAME=taskmanager
 DB_USERNAME=********
 DB_PASSWORD=********
+```
+
+---
+
+# 🍃 Configuración MongoDB
+
+==========================
+
+Variables:
+
+```text
+DATABASE_TYPE
+MONGODB_URI
+```
+
+Ejemplo:
+
+```text
+DATABASE_TYPE=mongodb
+
+MONGODB_URI=mongodb://********:********@localhost:27017/taskmanager?authSource=admin
 ```
 
 Las credenciales reales no deben almacenarse directamente en el código fuente.
@@ -869,38 +1090,62 @@ El contenedor utiliza:
 Java 25
 ```
 
-El perfil Docker se activa automáticamente desde el `Dockerfile`.
+La selección de la base de datos se realiza mediante variables de entorno.
+
+El contenedor expone:
+
+```text
+Port 8087
+```
+
+La aplicación puede conectarse a PostgreSQL o MongoDB dependiendo de:
+
+```text
+DATABASE_TYPE
+```
 
 Arquitectura:
 
 ```text
-Docker
+                         Docker
 
-┌──────────────────────────────┐
-│        Task Manager          │
-│                              │
-│       Spring Boot            │
-│          Java 25             │
-│                              │
-│         Port 8087            │
-└──────────────┬───────────────┘
-               │
-               │ JDBC
-               ▼
-        ┌───────────────┐
-        │  PostgreSQL   │
-        └───────────────┘
+              ┌────────────────────────┐
+              │      Task Manager       │
+              │                        │
+              │      Spring Boot       │
+              │         Java 25        │
+              │                        │
+              │        Port 8087       │
+              └───────────┬────────────┘
+                          │
+                 DATABASE_TYPE
+                          │
+             ┌────────────┴────────────┐
+             │                         │
+             ▼                         ▼
+      ┌───────────────┐        ┌───────────────┐
+      │  PostgreSQL   │        │    MongoDB    │
+      │               │        │               │
+      │ iagente_      │        │ mongodb_      │
+      │ backend       │        │ default       │
+      └───────────────┘        └───────────────┘
 ```
 
-El despliegue mediante Docker utiliza las variables:
+Cuando los servicios se ejecutan en el mismo host Docker, `task-manager` utiliza las redes Docker internas para comunicarse con las bases de datos.
+
+PostgreSQL:
 
 ```text
-DB_HOST
-DB_PORT
-DB_NAME
-DB_USERNAME
-DB_PASSWORD
+postgres:5432
 ```
+
+MongoDB:
+
+```text
+mongodb:27017
+```
+
+De esta forma, la comunicación entre contenedores no necesita utilizar el hostname público del servidor.
 
 ---
 
@@ -908,9 +1153,7 @@ DB_PASSWORD
 
 ====================
 
-El proyecto puede desplegarse mediante Docker Compose.
-
-Ejemplo:
+Ejemplo de despliegue con PostgreSQL y MongoDB disponibles en redes Docker externas:
 
 ```yaml
 services:
@@ -923,22 +1166,62 @@ services:
       - "8087:8087"
 
     environment:
-      DB_HOST: ********
+
+      # Base de datos seleccionada
+      DATABASE_TYPE: mongodb
+
+      # PostgreSQL
+      DB_HOST: postgres
       DB_PORT: 5432
       DB_NAME: taskmanager
       DB_USERNAME: ********
       DB_PASSWORD: ********
 
+      # MongoDB
+      MONGODB_URI: "mongodb://********:********@mongodb:27017/taskmanager?authSource=admin"
+
+    networks:
+      - iagente_backend
+      - mongodb_default
+
     restart: unless-stopped
+
+networks:
+
+  iagente_backend:
+    external: true
+
+  mongodb_default:
+    external: true
 ```
 
-El servicio queda disponible en:
+Para utilizar PostgreSQL:
+
+```yaml
+DATABASE_TYPE: postgres
+```
+
+Para utilizar MongoDB:
+
+```yaml
+DATABASE_TYPE: mongodb
+```
+
+Las redes:
 
 ```text
-http://localhost:8087
+iagente_backend
+mongodb_default
 ```
 
-o utilizando la IP/hostname del servidor donde se despliegue.
+son redes Docker externas ya existentes.
+
+Los nombres de los contenedores se utilizan como hostname interno:
+
+```text
+postgres
+mongodb
+```
 
 ---
 
@@ -954,14 +1237,26 @@ git clone https://github.com/jgf78/task-manager.git
 cd task-manager
 ```
 
-Configurar las variables de entorno necesarias:
+Configurar las variables de entorno necesarias.
+
+Para PostgreSQL:
 
 ```text
-DB_HOST
-DB_PORT
-DB_NAME
-DB_USERNAME
-DB_PASSWORD
+DATABASE_TYPE=postgres
+
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=taskmanager
+DB_USERNAME=********
+DB_PASSWORD=********
+```
+
+Para MongoDB:
+
+```text
+DATABASE_TYPE=mongodb
+
+MONGODB_URI=mongodb://********:********@localhost:27017/taskmanager?authSource=admin
 ```
 
 Compilar:
@@ -987,36 +1282,6 @@ Swagger:
 ```text
 http://localhost:8080/swagger-ui.html
 ```
-
----
-
-# 🗄️ PostgreSQL
-
-================
-
-Task Manager utiliza PostgreSQL como sistema de persistencia.
-
-Configuración mediante variables de entorno:
-
-```text
-DB_HOST
-DB_PORT
-DB_NAME
-DB_USERNAME
-DB_PASSWORD
-```
-
-Ejemplo:
-
-```text
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=taskmanager
-DB_USERNAME=********
-DB_PASSWORD=********
-```
-
-La aplicación utiliza Spring Data JPA e Hibernate para acceder a PostgreSQL.
 
 ---
 
@@ -1050,11 +1315,19 @@ Funcionalidades disponibles:
 
 ✅ PostgreSQL
 
+✅ MongoDB
+
+✅ Persistencia intercambiable
+
+✅ Selección de base de datos mediante `DATABASE_TYPE`
+
 ✅ Swagger / OpenAPI
 
 ✅ Docker
 
 ✅ Docker Compose
+
+✅ Redes Docker internas
 
 ✅ Configuración mediante variables de entorno
 
@@ -1071,23 +1344,27 @@ Spring Boot          -> Framework backend
 
 Spring Web           -> API REST
 
-Spring Data JPA      -> Persistencia
+Spring Data JPA      -> Persistencia PostgreSQL
 
-Hibernate             -> ORM
+Hibernate            -> ORM
 
-PostgreSQL           -> Base de datos
+Spring Data MongoDB  -> Persistencia MongoDB
 
-Jakarta Validation    -> Validación
+PostgreSQL           -> Base de datos relacional
 
-Springdoc OpenAPI     -> Documentación API
+MongoDB              -> Base de datos documental
 
-Swagger UI            -> Documentación interactiva
+Jakarta Validation   -> Validación
 
-Maven                 -> Build tool
+Springdoc OpenAPI    -> Documentación API
 
-Docker                -> Contenerización
+Swagger UI           -> Documentación interactiva
 
-Docker Compose        -> Despliegue
+Maven                -> Build tool
+
+Docker               -> Contenerización
+
+Docker Compose       -> Despliegue
 ```
 
 ---
@@ -1110,6 +1387,8 @@ Task Manager ha sido desarrollado como un proyecto práctico para trabajar y pro
 
 💾 Persistencia desacoplada
 
+🍃 Persistencia relacional y documental
+
 🔎 Consultas dinámicas
 
 📄 Paginación
@@ -1123,6 +1402,8 @@ Task Manager ha sido desarrollado como un proyecto práctico para trabajar y pro
 🐳 Contenerización
 
 🔧 Configuración por entornos
+
+🔄 Intercambio de tecnología de persistencia
 
 El objetivo principal es mantener una arquitectura limpia y preparada para evolucionar sin acoplar la lógica de negocio a frameworks o tecnologías concretas.
 
@@ -1150,6 +1431,8 @@ Julián Gómez Fernández
 
 🗄️ PostgreSQL
 
+🍃 MongoDB
+
 📚 OpenAPI
 
 ---
@@ -1159,11 +1442,11 @@ Julián Gómez Fernández
 ===============
 
 > "El dominio define las reglas.
-
+>
 > Los casos de uso definen lo que hacemos.
-
+>
 > Los puertos definen cómo nos comunicamos.
-
+>
 > Los adapters conectan el mundo exterior.
-
+>
 > Y la arquitectura permite que cada pieza pueda evolucionar sin arrastrar a las demás."
