@@ -1,17 +1,37 @@
 services:
 
-task-manager:
-  image: jgf78/task-manager:latest
-  container_name: task-manager
+  task-manager:
+    image: jgf78/task-manager:latest
+    container_name: task-manager
 
-  ports:
-    - "8087:8087"
+    ports:
+      - "8087:8087"
 
-  environment:
-    DB_HOST: xxxxxxx
-    DB_PORT: 5432
-    DB_NAME: taskmanager
-    DB_USERNAME: xxxxx
-    DB_PASSWORD: xxxxx
+    environment:
 
-  restart: unless-stopped
+      # postgres | mongodb
+      DATABASE_TYPE: mongodb
+
+      # PostgreSQL
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: taskmanager
+      DB_USERNAME: xxxxxxx
+      DB_PASSWORD: xxxxxxx
+
+      # MongoDB
+      MONGODB_URI: mongodb://xxxxxx:xxxxx@mongodb:27017/taskmanager?authSource=xxxxx
+
+    networks:
+      - iagente_backend
+      - mongodb_default
+
+    restart: unless-stopped
+
+networks:
+
+  iagente_backend:
+    external: true
+
+  mongodb_default:
+    external: true
