@@ -32,6 +32,6 @@ ENV JAVA_OPTS="-Xms${JVM_INITIAL_JAVA_HEAP} \
     -Djava.security.egd=file:/dev/./urandom \
     -Dfile.encoding=UTF-8"
 
-# Comando de entrada: arranca el JAR con el perfil docker activo
-ENTRYPOINT sh -c "java $JAVA_OPTS -Dspring.profiles.active=docker -jar /app/app.jar"
+# Comando de entrada: arranca el JAR
+ENTRYPOINT sh -c "java $JAVA_OPTS -jar /app/app.jar"
 
