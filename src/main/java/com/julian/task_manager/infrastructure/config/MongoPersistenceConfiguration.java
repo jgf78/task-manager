@@ -3,6 +3,7 @@ package com.julian.task_manager.infrastructure.config;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.mongodb.core.MongoOperations;
 
 import com.julian.task_manager.domain.port.out.TaskRepository;
 import com.julian.task_manager.infrastructure.adapter.out.mongodb.TaskMongoIdGenerator;
@@ -19,11 +20,13 @@ public class MongoPersistenceConfiguration {
     @Bean
     TaskRepository taskRepository(
             TaskMongoRepository taskMongoRepository,
-            TaskMongoIdGenerator idGenerator) {
+            TaskMongoIdGenerator idGenerator,
+            MongoOperations mongoOperations) {
 
         return new TaskMongoPersistenceAdapter(
                 taskMongoRepository,
-                idGenerator
+                idGenerator,
+                mongoOperations
         );
     }
 }
